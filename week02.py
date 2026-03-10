@@ -1,3 +1,4 @@
+import statistics
 data = [10, 20, 30, 40]
-average = sum(data) / len(data)
+average = statistics.mean(data)
 print(average)
