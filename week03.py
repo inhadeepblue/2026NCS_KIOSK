@@ -2,13 +2,11 @@ import pandas as pd
 import seaborn as sns
 
 mpg = sns.load_dataset('mpg')
-# print(mpg.head(3))
-# print(mpg.tail(3))
-# print(mpg.query('mpg > 27.0'))
-mpg_asc = mpg.sort_values('mpg')
-print(mpg_asc)
-mpg_asc_disp_out = mpg_asc.drop(columns=['displacement'])
-print(mpg_asc_disp_out)
+print(mpg.head(3))
+print(mpg.iat[1, 8])
+# print(mpg.iloc[:, [0, 1]])
+# print(mpg.iloc[2:5, [0, 1]])
+# print(mpg.loc[:, 'model_year':'origin'])
 
 
 # items = [
