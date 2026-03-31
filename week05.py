@@ -27,17 +27,17 @@ class CafeOrder:
         self.total_price += self.prices[idx]
         self.amounts[idx] += 1
 
-    def display_menu(self) -> str:
-        """
-        Generate a dynamic menu string
-        :return: formatted menu string
-        """
-        return "".join(
-            [f"{k + 1}) {self.drinks[k]} {self.prices[k]} won  "
-             for k in range(len(self.drinks))]
-        ) + f"{len(self.drinks) + 1}) Exit : "
+    # def display_menu(self) -> str:
+    #     """
+    #     Generate a dynamic menu string
+    #     :return: formatted menu string
+    #     """
+    #     return "".join(
+    #         [f"{k + 1}) {self.drinks[k]} {self.prices[k]} won  "
+    #          for k in range(len(self.drinks))]
+    #     ) + f"{len(self.drinks) + 1}) Exit : "
 
-    def print_summary(self):
+    def print_receipt(self):
         """Print order summary and final price"""
         print("\nProduct\tPrice\tAmount\tSubtotal")
         for i in range(len(self.drinks)):
@@ -58,9 +58,15 @@ class CafeOrder:
 
     def run(self):
         """Execute the order system"""
+
+        display_menu = "".join(
+            [f"{k + 1}) {self.drinks[k]} {self.prices[k]} won  "
+             for k in range(len(self.drinks))]
+        ) + f"{len(self.drinks) + 1}) Exit : "
+
         while True:
             try:
-                menu = int(input(self.display_menu()))
+                menu = int(input(display_menu))
                 if 1 <= menu <= len(self.drinks):
                     self.process_order(menu - 1)
                 elif menu == len(self.drinks) + 1:
@@ -71,13 +77,13 @@ class CafeOrder:
             except ValueError:
                 print("Please enter a valid number. Try again.")
 
-        self.print_summary()
+        self.print_receipt()
 
 
 if __name__ == "__main__":
-    # menu_drinks = ["Ice Americano", "Cafe Latte", "Watermelon Juice"]
-    # menu_prices = [2000, 3000, 4900]
-    menu_drinks = ["Ice Americano", "Cafe Latte"]
-    menu_prices = [2000, 3000]
+    menu_drinks = ["Ice Americano", "Cafe Latte", "Watermelon Juice"]
+    menu_prices = [2000, 3000, 4900]
+    # menu_drinks = ["Ice Americano", "Cafe Latte"]
+    # menu_prices = [2000, 3000]
     cafe = CafeOrder(menu_drinks, menu_prices)
     cafe.run()
