@@ -6,7 +6,7 @@ def time_measure_decorator(f):
         s = time.time()
         r = f(*args)
         e = time.time()
-        print(e-s)
+        print(f"time : {e-s}")
         return r
     return wrapper
 
@@ -19,12 +19,12 @@ def one_to_n_loop(n):
     return result
 
 
-@time_measure_decorator
 def ont_to_n_math(n):
     r = n * (n + 1) // 2
     return r
 
 
 number = int(input("Input number : "))
-print(ont_to_n_math(number))
+func = time_measure_decorator(ont_to_n_math)
+print(func(number))
 print(one_to_n_loop(number))
