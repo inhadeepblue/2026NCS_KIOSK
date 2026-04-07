@@ -23,6 +23,6 @@ classDiagram
         +run() None
     }
 
-    %% Composition (Strong Has-a) 관계: OrderProcessor가 Menu의 생명주기를 관리함
+    %% Composition (Strong Has-a) 관계: OrderProcessor가 Menu의 Life cycle이 같다.
     OrderProcessor "1" *-- "1" Menu : composition
 ```
