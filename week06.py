@@ -61,13 +61,15 @@ class OrderProcessor:
     DISCOUNT_THRESHOLD = 10000
     DISCOUNT_RATE = 0.1
 
-    def __init__(self, menu: Menu):
+    def __init__(self, drinks: List[str], prices: List[int]):
         """
         Initialization method for the OrderProcessor class.
-        :param menu: An instance of the Menu class.
+        :param drinks: beverage name list
+        :param prices: beverage price list
         """
-        self.menu = menu
-        self.amounts = [0] * menu.get_menu_length()
+        # Composition: OrderProcessor 객체가 Menu 객체를 생성하고 관리함
+        self.menu = Menu(drinks, prices)
+        self.amounts = [0] * self.menu.get_menu_length()
         self.total_price = 0
 
     def apply_discount(self, price: int) -> float:
@@ -143,6 +145,6 @@ if __name__ == "__main__":
     menu_drinks = ["Ice Americano", "Cafe Latte", "Watermelon Juice"]
     menu_prices = [2000, 3000, 4900]
 
-    menu = Menu(menu_drinks, menu_prices)
-    order_processor = OrderProcessor(menu)
+    # OrderProcessor 객체가 Menu 객체를 생성하고 관리함
+    order_processor = OrderProcessor(menu_drinks, menu_prices)
     order_processor.run()
