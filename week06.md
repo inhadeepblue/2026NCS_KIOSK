@@ -16,13 +16,13 @@ classDiagram
         +Menu menu
         +List~int~ amounts
         +int total_price
-        +__init__(menu: Menu)
+        +__init__(drinks: List~str~, prices: List~int~)
         +apply_discount(price: int) float
         +process_order(idx: int) None
         +print_receipt() None
         +run() None
     }
 
-    %% Aggregation (Has-a) 관계: OrderProcessor가 Menu를 소유함
-    OrderProcessor "1" o-- "1" Menu : aggregation
+    %% Composition (Strong Has-a) 관계: OrderProcessor가 Menu의 생명주기를 관리함
+    OrderProcessor "1" *-- "1" Menu : composition
 ```
