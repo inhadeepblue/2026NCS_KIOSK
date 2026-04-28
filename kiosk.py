@@ -1,5 +1,6 @@
 from typing import List  # type hint
 
+
 class Menu:
     """Represents the cafe menu."""
 
@@ -21,7 +22,7 @@ class Menu:
         :return: formatted menu string
         """
         return "".join(
-            [f"{k + 1}) {self.drinks[k]} {self.prices[k]} won  "
+            [f"{k + 1}) {self.drinks[k]} {self.prices[k]} won\n"
              for k in range(len(self.drinks))]
         ) + f"{len(self.drinks) + 1}) Exit : "
 
@@ -61,10 +62,14 @@ class OrderProcessor:
     DISCOUNT_THRESHOLD = 10000
     DISCOUNT_RATE = 0.1
 
-    def __init__(self):
-        """Initialization method for the OrderProcessor class."""
+    def __init__(self, menu: Menu):
+        """
+        Initialization method for the OrderProcessor class.
+        :param menu: An instance of the Menu class.
+        """
+        self.menu = menu
+        self.amounts = [0] * menu.get_menu_length()
         self.total_price = 0
-        self.amounts = []  # 메뉴 항목 수에 따라 초기화될 예정
 
     def apply_discount(self, price: int) -> float:
         """
@@ -76,63 +81,75 @@ class OrderProcessor:
             return price * (1 - self.DISCOUNT_RATE)
         return price
 
-    def process_order(self, menu: Menu, idx: int) -> None:
+    def process_order(self, idx: int) -> None:
         """
         Process the order and accumulate the total price
-        :param menu: Menu object (dependency)
         :param idx: index of the ordered drink
         """
-        drink_name = menu.get_drink_name(idx)
-        drink_price = menu.get_price(idx)
+        drink_name = self.menu.get_drink_name(idx)
+        drink_price = self.menu.get_price(idx)
 
         print(f"{drink_name} ordered. Price: {drink_price} won")
         self.total_price += drink_price
         self.amounts[idx] += 1
 
-    def print_receipt(self, menu: Menu) -> None:
+    def print_receipt(self) -> None:
         """Print order summary and final price with formatted alignment using f-string"""
         print(f"\n{'Product':<15} {'Price':<10} {'Amount':<10} {'Subtotal':<10}")
         print("-" * 50)
 
-        for i in range(menu.get_menu_length()):
+        for i in range(self.menu.get_menu_length()):
             if self.amounts[i] > 0:
-                drink_name = menu.get_drink_name(i)
-                drink_price = menu.get_price(i)
+                drink_name = self.menu.get_drink_name(i)
+                drink_price = self.menu.get_price(i)
 
-                print(
-                    f"{drink_name:<15} {drink_price:<10} {self.amounts[i]:<10} {drink_price * self.amounts[i]:<10}")
+                print(f"{drink_name:<15} {drink_price:<10} {self.amounts[i]:<10} {drink_price * self.amounts[i]} won")
 
         discounted_price = self.apply_discount(self.total_price)
         discount = self.total_price - discounted_price
 
         print("-" * 50)
-        print(f"{'Total price before discount:':<30} {self.total_price:>5}")
+        print(f"{'Total price before discount:':<30} {self.total_price} won")
         if discount > 0:
-            print(f"{'Discount amount:':<30} {discount:<10.0f}")
-            print(f"{'Total price after discount:':<30} {discounted_price:<10.0f}")
+            print(f"{'Discount amount:':<30} {discount} won")
+            print(f"{'Total price after discount:':<30} {discounted_price} won")
         else:
             print(f"{'No discount applied.':<30}")
-            print(f"{'Total price:':<30} {self.total_price:>5}")
+            print(f"{'Total price:':<30} {self.total_price:>5} won")
 
-    def run(self, menu: Menu):
+    def get_next_ticket_number(self) -> int:
+        """
+        Function that Produce next ticket number
+        :return: next ticket number
+        """
+        with open("ticket_number.txt", "r") as fp:
+            number = int(fp.read())
+
+        number = number + 1
+
+        with open("ticket_number.txt", "w") as fp:
+            fp.write(str(number))
+
+        return number
+
+
+    def run(self):
         """Execute the order system"""
-        self.amounts = [0] * menu.get_menu_length() # run 시점에 메뉴 길이에 맞춰 초기화
-
         while True:
             try:
-                menu_display = menu.display_menu()
-                choice = int(input(menu_display))
-                if 1 <= choice <= menu.get_menu_length():
-                    self.process_order(menu, choice - 1)
-                elif choice == menu.get_menu_length() + 1:
+                menu_display = self.menu.display_menu()
+                menu = int(input(menu_display))
+                if 1 <= menu <= self.menu.get_menu_length():
+                    self.process_order(menu - 1)
+                elif menu == self.menu.get_menu_length() + 1:
                     print("Order finished~")
                     break
                 else:
-                    print(f"Menu {choice} is invalid. Please choose from the above menu.")
+                    print(f"Menu {menu} is invalid. Please choose from the above menu.")
             except ValueError:
                 print("Please enter a valid number. Try again.")
             except IndexError as e:
                 print(e)  # Display the specific IndexError message
 
-        self.print_receipt(menu)
-
+        self.print_receipt()
+        print(f"Queue number ticket : {self.get_next_ticket_number()}")
