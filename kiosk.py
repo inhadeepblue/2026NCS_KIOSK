@@ -1,4 +1,5 @@
 from typing import List  # type hint
+import sqlite3
 
 
 class Menu:
@@ -71,6 +72,19 @@ class OrderProcessor:
         self.amounts = [0] * menu.get_menu_length()
         self.total_price = 0
 
+        self.conn = sqlite3.connect('queue_number.db')
+        self.cur = self.conn.cursor()
+
+        self.cur.execute('''
+            create table if not exists ticket (
+            id integer primary key autoincrement,
+            number integer not null
+            )
+        ''')
+
+        self.conn.commit()
+
+
     def apply_discount(self, price: int) -> float:
         """
         Apply discount rate when the total amount exceeds a certain threshold
@@ -80,6 +94,7 @@ class OrderProcessor:
         if price >= self.DISCOUNT_THRESHOLD:
             return price * (1 - self.DISCOUNT_RATE)
         return price
+
 
     def process_order(self, idx: int) -> None:
         """
@@ -92,6 +107,7 @@ class OrderProcessor:
         print(f"{drink_name} ordered. Price: {drink_price} won")
         self.total_price += drink_price
         self.amounts[idx] += 1
+
 
     def print_receipt(self) -> None:
         """Print order summary and final price with formatted alignment using f-string"""
@@ -117,19 +133,23 @@ class OrderProcessor:
             print(f"{'No discount applied.':<30}")
             print(f"{'Total price:':<30} {self.total_price:>5} won")
 
+
     def get_next_ticket_number(self) -> int:
         """
-        Function that Produce next ticket number
+        Function that Produce next ticket number (Database version)
         :return: next ticket number
         """
-        with open("ticket_number.txt", "r") as fp:
-            number = int(fp.read())
+        self.cur.execute('select number from ticket order by number desc limit 1')
+        result = self.cur.fetchone()
 
-        number = number + 1
+        if result is None:
+            number = 1
+            self.cur.execute('insert into ticket (number) values (?)',(number,))
+        else:
+            number = result[0] + 1
+            self.cur.execute('insert into ticket (number) values (?)', (number,))
 
-        with open("ticket_number.txt", "w") as fp:
-            fp.write(str(number))
-
+        self.conn.commit()
         return number
 
 
@@ -153,3 +173,8 @@ class OrderProcessor:
 
         self.print_receipt()
         print(f"Queue number ticket : {self.get_next_ticket_number()}")
+
+
+    def __del__(self):
+        print('End program')
+        self.conn.close()  # db connection close ....

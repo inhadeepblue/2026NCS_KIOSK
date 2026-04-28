@@ -5,7 +5,10 @@ __pycache__/
 *$py.class
 
 .idea
+*.exe
 *.txt
+*.db
+temp.py
 
 # C extensions
 *.so
