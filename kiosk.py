@@ -1,180 +1,164 @@
-from typing import List  # type hint
+import tkinter as tk
+from tkinter import messagebox
 import sqlite3
 
-
 class Menu:
-    """Represents the cafe menu."""
-
-    def __init__(self, drinks: List[str], prices: List[int]):
-        """
-        Initialization method for the Menu class.
-        :param drinks: beverage name list
-        :param prices: beverage price list
-        """
+    def __init__(self, drinks, prices):
         if len(drinks) != len(prices):
             raise ValueError("Drinks and prices lists must have the same length.")
-
         self.drinks = drinks
         self.prices = prices
 
-    def display_menu(self) -> str:
-        """
-        Generate a dynamic menu string
-        :return: formatted menu string
-        """
-        return "".join(
-            [f"{k + 1}) {self.drinks[k]} {self.prices[k]} won\n"
-             for k in range(len(self.drinks))]
-        ) + f"{len(self.drinks) + 1}) Exit : "
-
-    def get_price(self, idx: int) -> int:
-        """
-        Get the price of a drink at a given index.
-        :param idx: index of the drink
-        :return: price of the drink
-        """
+    def get_price(self, idx):
         if 0 <= idx < len(self.prices):
             return self.prices[idx]
         else:
             raise IndexError("Invalid menu index.")
 
-    def get_drink_name(self, idx: int) -> str:
-        """
-        Get the name of a drink at a given index.
-        :param idx: index of the drink
-        :return: name of the drink
-        """
+    def get_drink_name(self, idx):
         if 0 <= idx < len(self.drinks):
             return self.drinks[idx]
         else:
             raise IndexError("Invalid menu index.")
 
-    def get_menu_length(self) -> int:
-        """
-        Get the number of items on the menu.
-        :return: the length of the menu
-        """
+    def get_menu_length(self):
         return len(self.drinks)
 
-
 class OrderProcessor:
-    """Processes cafe orders, applies discounts, and prints receipts."""
-
     DISCOUNT_THRESHOLD = 10000
     DISCOUNT_RATE = 0.1
 
-    def __init__(self, menu: Menu):
-        """
-        Initialization method for the OrderProcessor class.
-        :param menu: An instance of the Menu class.
-        """
+    def __init__(self, menu):
         self.menu = menu
         self.amounts = [0] * menu.get_menu_length()
         self.total_price = 0
 
         self.conn = sqlite3.connect('queue_number.db')
         self.cur = self.conn.cursor()
-
         self.cur.execute('''
             create table if not exists ticket (
             id integer primary key autoincrement,
             number integer not null
             )
         ''')
-
         self.conn.commit()
 
-
-    def apply_discount(self, price: int) -> float:
-        """
-        Apply discount rate when the total amount exceeds a certain threshold
-        :param price: price before discount
-        :return: price after discount
-        """
+    def apply_discount(self, price):
         if price >= self.DISCOUNT_THRESHOLD:
             return price * (1 - self.DISCOUNT_RATE)
         return price
 
-
-    def process_order(self, idx: int) -> None:
-        """
-        Process the order and accumulate the total price
-        :param idx: index of the ordered drink
-        """
+    def process_order(self, idx):
         drink_name = self.menu.get_drink_name(idx)
         drink_price = self.menu.get_price(idx)
-
-        print(f"{drink_name} ordered. Price: {drink_price} won")
         self.total_price += drink_price
         self.amounts[idx] += 1
 
-
-    def print_receipt(self) -> None:
-        """Print order summary and final price with formatted alignment using f-string"""
-        print(f"\n{'Product':<15} {'Price':<10} {'Amount':<10} {'Subtotal':<10}")
-        print("-" * 50)
-
+    def get_receipt(self):
+        lines = []
+        lines.append(f"{'Product':<15} {'Price':<10} {'Amount':<10} {'Subtotal':<10}")
+        lines.append("-" * 50)
         for i in range(self.menu.get_menu_length()):
             if self.amounts[i] > 0:
                 drink_name = self.menu.get_drink_name(i)
                 drink_price = self.menu.get_price(i)
-
-                print(f"{drink_name:<15} {drink_price:<10} {self.amounts[i]:<10} {drink_price * self.amounts[i]} won")
-
+                lines.append(f"{drink_name:<15} {drink_price:<10} {self.amounts[i]:<10} {drink_price * self.amounts[i]} won")
         discounted_price = self.apply_discount(self.total_price)
         discount = self.total_price - discounted_price
-
-        print("-" * 50)
-        print(f"{'Total price before discount:':<30} {self.total_price} won")
+        lines.append("-" * 50)
+        lines.append(f"{'Total price before discount:':<30} {self.total_price} won")
         if discount > 0:
-            print(f"{'Discount amount:':<30} {discount} won")
-            print(f"{'Total price after discount:':<30} {discounted_price} won")
+            lines.append(f"{'Discount amount:':<30} {int(discount)} won")
+            lines.append(f"{'Total price after discount:':<30} {int(discounted_price)} won")
         else:
-            print(f"{'No discount applied.':<30}")
-            print(f"{'Total price:':<30} {self.total_price:>5} won")
+            lines.append(f"{'No discount applied.':<30}")
+            lines.append(f"{'Total price:':<30} {self.total_price} won")
+        return "\n".join(lines)
 
-
-    def get_next_ticket_number(self) -> int:
-        """
-        Function that Produce next ticket number (Database version)
-        :return: next ticket number
-        """
+    def get_next_ticket_number(self):
         self.cur.execute('select number from ticket order by number desc limit 1')
         result = self.cur.fetchone()
-
         if result is None:
             number = 1
             self.cur.execute('insert into ticket (number) values (?)',(number,))
         else:
             number = result[0] + 1
-            self.cur.execute('insert into ticket (number) values (?)', (number,))
-
+            self.cur.execute('update ticket set number = ? where id = (select id from ticket order by id desc limit 1)', (number,))
         self.conn.commit()
         return number
 
-
-    def run(self):
-        """Execute the order system"""
-        while True:
-            try:
-                menu_display = self.menu.display_menu()
-                menu = int(input(menu_display))
-                if 1 <= menu <= self.menu.get_menu_length():
-                    self.process_order(menu - 1)
-                elif menu == self.menu.get_menu_length() + 1:
-                    print("Order finished~")
-                    break
-                else:
-                    print(f"Menu {menu} is invalid. Please choose from the above menu.")
-            except ValueError:
-                print("Please enter a valid number. Try again.")
-            except IndexError as e:
-                print(e)  # Display the specific IndexError message
-
-        self.print_receipt()
-        print(f"Queue number ticket : {self.get_next_ticket_number()}")
-
+    def reset(self):
+        self.amounts = [0] * self.menu.get_menu_length()
+        self.total_price = 0
 
     def __del__(self):
-        print('End program')
-        self.conn.close()  # db connection close ....
+        self.conn.close()
+
+class KioskApp:
+    def __init__(self, root, menu, order_processor):
+        self.root = root
+        self.menu = menu
+        self.order_processor = order_processor
+
+        self.root.title("Cafe Kiosk")
+        self.create_widgets()
+
+    def create_widgets(self):
+        # 메뉴 버튼
+        self.buttons = []
+        for idx, (drink, price) in enumerate(zip(self.menu.drinks, self.menu.prices)):
+            btn = tk.Button(self.root, text=f"{drink}\n({price}원)", width=16, height=3,
+                            command=lambda idx=idx: self.add_order(idx))
+            btn.grid(row=0, column=idx, padx=5, pady=5)
+            self.buttons.append(btn)
+
+        # 주문내역
+        self.order_label = tk.Label(self.root, text="Order List", font=("Arial", 12, "bold"))
+        self.order_label.grid(row=1, column=0, columnspan=len(self.menu.drinks), pady=(10,0))
+
+        self.order_text = tk.Text(self.root, width=60, height=10, state='disabled')
+        self.order_text.grid(row=2, column=0, columnspan=len(self.menu.drinks), padx=5, pady=5)
+
+        # 결제 및 취소 버튼
+        self.finish_button = tk.Button(self.root, text="Finish Order", bg="#4CAF50", fg="white", width=15, command=self.finish_order)
+        self.finish_button.grid(row=3, column=0, pady=10)
+
+        self.cancel_button = tk.Button(self.root, text="Cancel All", bg="#F44336", fg="white", width=15, command=self.cancel_order)
+        self.cancel_button.grid(row=3, column=1, pady=10)
+
+        self.update_order_text()
+
+    def add_order(self, idx):
+        self.order_processor.process_order(idx)
+        self.update_order_text()
+
+    def update_order_text(self):
+        self.order_text.config(state='normal')
+        self.order_text.delete(1.0, tk.END)
+        for i in range(self.menu.get_menu_length()):
+            if self.order_processor.amounts[i] > 0:
+                name = self.menu.get_drink_name(i)
+                price = self.menu.get_price(i)
+                amount = self.order_processor.amounts[i]
+                subtotal = price * amount
+                self.order_text.insert(tk.END, f"{name:<15} {price}원 x {amount} = {subtotal}원\n")
+        self.order_text.insert(tk.END, f"\nTotal: {self.order_processor.total_price}원")
+        if self.order_processor.total_price >= self.order_processor.DISCOUNT_THRESHOLD:
+            discounted = int(self.order_processor.apply_discount(self.order_processor.total_price))
+            discount = self.order_processor.total_price - discounted
+            self.order_text.insert(tk.END, f"\nDiscount: {discount}원\nDiscounted Total: {discounted}원")
+        self.order_text.config(state='disabled')
+
+    def finish_order(self):
+        if self.order_processor.total_price == 0:
+            messagebox.showinfo("Notice", "Please order at least one drink.")
+            return
+        receipt = self.order_processor.get_receipt()
+        ticket = self.order_processor.get_next_ticket_number()
+        messagebox.showinfo("Receipt", f"{receipt}\n\nQueue number ticket: {ticket}")
+        self.order_processor.reset()
+        self.update_order_text()
+
+    def cancel_order(self):
+        self.order_processor.reset()
+        self.update_order_text()
