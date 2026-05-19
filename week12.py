@@ -1,18 +1,21 @@
-from bs4 import BeautifulSoup
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-html = """
-<html>
-<head>
-<title>스크레이핑 실습</title>
-</head>
-<body>
-<a href="http://www.inha.ac.kr">인하대학교</a><br>
-<a href="http://www.harvard.edu">하버드대학교</a>
-</body>
-</html>
-"""
-soup = BeautifulSoup(html, 'html.parser')
-urls = soup.find_all("a")
-print(urls)
-for url in urls:
-  print(f"{url.string}의 url주소는 {url.attrs['href']}입니다.")
+titanic = sns.load_dataset('titanic')
+new_titanic = titanic.drop(columns=['alive', 'class', 'embark_town', 'deck'])
+# print(new_titanic['age'].value_counts())
+# print(new_titanic['age'].sort_values(ascending=False))
+# print(new_titanic[new_titanic['age'].isnull()])
+# print(new_titanic[new_titanic['survived']==1])
+# print(titanic.info())
+# print(new_titanic.info())
+# print(titanic['survived'].head())
+# print(titanic['alive'].head())
+# print(titanic['embarked'].tail())
+# print(titanic['embark_town'].tail())
+# print(titanic['pclass'].tail())
+# print(titanic['class'].tail())
+
+sns.histplot(titanic['age'], bins=30, kde=True)
+plt.title("Age Distribution (with NaN)")
+plt.show()
