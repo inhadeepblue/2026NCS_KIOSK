@@ -1,23 +1,19 @@
-import urllib.request
-from bs4 import BeautifulSoup
-import pandas as pd
-import datetime
+import tkinter as tk
+from kiosk import KioskGUI
+import requests
 
-shops = list()
 
-for i in range(1,46):
-    url = f"https://www.hollys.co.kr/store/korea/korStore2.do?pageNo={i}&sido=&gugun=&store="
-    page = urllib.request.urlopen(url)
-    soup = BeautifulSoup(page, "html.parser")
-    tbody = soup.find('tbody')
-    trs = tbody.find_all('tr')  # -> list
+if __name__ == "__main__":
+    url = f"https://wttr.in/incheon?&0&Q"
+    response = requests.get(url)
+    if response.status_code == 200:
+        print(response.text.strip())
+    else:
+        print(f"상태 코드 : {response.status_code}")
 
-    for tr in trs:
-        tds = tr.find_all('td')
-        shop_name = tds[1].string  # 매장명
-        shop_addr = tds[3].string  # 주소
-        shop_phone = tds[5].string  # 전화번호
-        shops.append([shop_name]+[shop_addr]+[shop_phone]+[datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")])  # 2d list
+    menu_drinks = ["Ice Americano", "Cafe Latte", "Watermelon Juice", "Ice tea"]
+    menu_prices = [2000, 3000, 4900, 3500]
 
-hollys_df = pd.DataFrame(shops, columns=('매장명','주소','전화번호','일시'))
-hollys_df.to_csv('holly.csv', mode='w', index=True, encoding='utf-8')
+    root = tk.Tk()
+    app = KioskGUI(root, menu_drinks, menu_prices)
+    root.mainloop()
