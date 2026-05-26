@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import messagebox
 import sqlite3
 from typing import List
+from datetime import datetime
+import requests
 
 
 class Menu:
@@ -105,7 +107,7 @@ class OrderProcessor:
         drink_name = self.menu.get_drink_name(idx)
         drink_price = self.menu.get_price(idx)
 
-        print(f"{drink_name} ordered. Price: {drink_price} won")
+        # print(f"{drink_name} ordered. Price: {drink_price} won")
         self.total_price += drink_price
         self.amounts[idx] += 1
 
@@ -135,7 +137,7 @@ class OrderProcessor:
         else:
             receipt_text += f"{'No discount applied.':<30}\n"
             receipt_text += f"{'Total price:':<30} {self.total_price:>5} won\n"
-
+        receipt_text = receipt_text + '\t' + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return receipt_text
 
     def get_next_ticket_number(self) -> int:
@@ -163,7 +165,7 @@ class OrderProcessor:
         Destructor method for OrderProcessor - close database connection
         :return: None
         """
-        print('End program')
+        # print('End program')
         self.conn.close()  # db connection close ....
 
 
@@ -254,7 +256,7 @@ class KioskGUI:
             pady=5,
             command=self.reset_order
         )
-        reset_btn.grid(row=0, column=1, padx=5, pady=5)
+        reset_btn.grid(row=0, column=3, padx=5, pady=5)
 
         # Exit button
         exit_btn = tk.Button(
@@ -269,10 +271,40 @@ class KioskGUI:
         )
         exit_btn.grid(row=0, column=2, padx=5, pady=5)
 
+        # Weather label
+        self.weather_label = tk.Label(
+            self.root,
+            text="Loading weather information...",
+            font=("Arial", 12),
+            bg="#f0f0f0"
+        )
+        self.weather_label.grid(row=3, column=0, columnspan=2, pady=5)
+
+
         # Configure grid weights for responsiveness
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         self.root.grid_columnconfigure(1, weight=1)
+
+
+    def update_weather_info(self) -> None:
+        """ Load weather data from 'wttr.in'"""
+        # url = "https://wttr.in/incheon?&0&Q"
+        url = "https://wttr.in/incheon?format=4"  # ok
+        # url = "https://naver.com/kim"  # 404
+        # url = "https://wttr123.in/incheon?format=4"  # exception occur
+        # url = "https://www.nate.com"
+        try:
+            response = requests.get(url)  # exception occur
+            weather_text = response.text.strip()
+            if response.status_code == 200:
+                self.weather_label.config(text=f"Current weather ({weather_text})")
+            else:
+                self.weather_label.config(text=f"Weather information cannot be loaded. (Status code : {response.status_code})")
+        except Exception as err:
+            self.weather_label.config(text=f"Weather information error\n{err}")
+            # print(err)
+
 
     def add_to_order(self, idx: int) -> None:
         """
@@ -281,6 +313,7 @@ class KioskGUI:
         """
         self.order_processor.process_order(idx)
         self.update_order_display()
+        self.update_weather_info()  # 추가 주문 시 날씨 정보 로딩
 
     def update_order_display(self) -> None:
         """Update the order summary in the text widget"""
